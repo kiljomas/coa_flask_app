@@ -6,8 +6,8 @@ from .. import db
 
 @main.route('/')
 def index():
-    for row in CoaSummaryView.query.all():
-        print(row.site_name)
+    #for row in CoaSummaryView.query.all():
+    #    print(row.site_name)
     return render_template('index.html')
 
 @main.route('/sitecategoriesbreakdown')
