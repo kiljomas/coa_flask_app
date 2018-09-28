@@ -26,3 +26,19 @@ def site_details():
        print(row)
     return jsonify(result)
 
+@main.route('/getsitesdropdownlist')
+def site_list():
+    sql_result = CoaSummaryView.query.filter().\
+                                      with_entities(CoaSummaryView.site_name).\
+                                      group_by(CoaSummaryView.site_name).\
+                                      order_by(CoaSummaryView.site_name).\
+                                      all()
+    json_list = list()
+    for row in sql_result:
+        if len(row) == 1:
+            print(row)
+            json_list.append(row[0])
+
+    return jsonify(site_names=json_list)
+
+
