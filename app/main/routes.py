@@ -46,6 +46,54 @@ def site_list():
 
     return jsonify(site_names=json_list)
 
+@main.route('/locations')
+def all_locations_list():
+    result_list = list()
+    #Get site names
+    site_name_sql_result = CoaSummaryView.query.filter().\
+                                      with_entities(CoaSummaryView.site_name).\
+                                      group_by(CoaSummaryView.site_name).\
+                                      order_by(CoaSummaryView.site_name).\
+                                      all()
+    #Remove Nulls
+    site_name_list = list(filter(lambda item: item[0], site_name_sql_result))
+    site_name_list = [x[0] for x in site_name_list]
+    site_name_dict = {}
+    site_name_dict['locationCategory'] = 'site'
+    site_name_dict['locationLabel'] = 'Site'
+    site_name_dict['locationNames'] = site_name_list
+    result_list.append(site_name_dict)
+
+    #Get towns
+    town_sql_result = CoaSummaryView.query.filter().\
+                                      with_entities(CoaSummaryView.town).\
+                                      group_by(CoaSummaryView.town).\
+                                      order_by(CoaSummaryView.town).\
+                                      all()
+    town_list = list(filter(lambda item: item[0], town_sql_result))
+    town_list = [x[0] for x in town_list]
+    town_dict = {}
+    town_dict['locationCategory'] = 'town'
+    town_dict['locationLabel'] = 'Town'
+    town_dict['locationNames'] = town_list
+    result_list.append(town_dict)
+
+    #Get counties
+    county_sql_result = CoaSummaryView.query.filter().\
+                                      with_entities(CoaSummaryView.county).\
+                                      group_by(CoaSummaryView.county).\
+                                      order_by(CoaSummaryView.county).\
+                                      all()
+    county_list = list(filter(lambda item: item[0], county_sql_result))
+    county_list = [x[0] for x in county_list]
+    county_dict = {}
+    county_dict['locationCategory'] = 'county'
+    county_dict['locationLabel'] = 'County'
+    county_dict['locationNames'] = county_list
+    result_list.append(county_dict)
+
+    return jsonify(locations=result_list)
+
 
 @main.route('/dirtydozen')
 def dirty_dozens():
