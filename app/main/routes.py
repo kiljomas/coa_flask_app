@@ -3,6 +3,7 @@ from . import main
 from ..models import Item, CoaSummaryView
 import datetime
 from .. import db
+from collections import OrderedDict
 
 @main.route('/')
 def index():
@@ -111,9 +112,14 @@ def dirty_dozens():
                                            group_by(CoaSummaryView.item_name)
 
     #remove the NULL item_name
+    total = sum(i[1] for i in result)
     result = filter(lambda item: item[0], result)
     result = sorted(result, key=lambda tup:tup[1], reverse = True)
     result = result[:12]
-    result_dict = dict((x,y) for x,y in result)
+    result_percentage = list()
+    for x,y in result:
+        percentage = round(float((y/total) * 100), 2)
+        result_percentage.append((x,percentage))
+    result_dict = OrderedDict((tup[0],tup[1]) for tup in result_percentage)
     return jsonify(items=result_dict)
 
