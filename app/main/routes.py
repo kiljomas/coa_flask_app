@@ -46,6 +46,16 @@ def site_list():
 
     return jsonify(site_names=json_list)
 
+
+def create_location_dict(category, label, location_sql_result):
+    location_list = list(filter(lambda item: item[0], location_sql_result))
+    location_list = [x[0] for x in location_list]
+    location_dict = {}
+    location_dict['locationCategory'] = category
+    location_dict['locationLabel'] = label
+    location_dict['locationNames'] = location_list
+    return location_dict
+ 
 @main.route('/locations')
 def all_locations_list():
     result_list = list()
@@ -55,14 +65,7 @@ def all_locations_list():
                                       group_by(CoaSummaryView.site_name).\
                                       order_by(CoaSummaryView.site_name).\
                                       all()
-    #Remove Nulls
-    site_name_list = list(filter(lambda item: item[0], site_name_sql_result))
-    site_name_list = [x[0] for x in site_name_list]
-    site_name_dict = {}
-    site_name_dict['locationCategory'] = 'site'
-    site_name_dict['locationLabel'] = 'Site'
-    site_name_dict['locationNames'] = site_name_list
-    result_list.append(site_name_dict)
+    result_list.append(create_location_dict('site','Site',site_name_sql_result))
 
     #Get towns
     town_sql_result = CoaSummaryView.query.filter().\
@@ -70,13 +73,7 @@ def all_locations_list():
                                       group_by(CoaSummaryView.town).\
                                       order_by(CoaSummaryView.town).\
                                       all()
-    town_list = list(filter(lambda item: item[0], town_sql_result))
-    town_list = [x[0] for x in town_list]
-    town_dict = {}
-    town_dict['locationCategory'] = 'town'
-    town_dict['locationLabel'] = 'Town'
-    town_dict['locationNames'] = town_list
-    result_list.append(town_dict)
+    result_list.append(create_location_dict('town','Town',town_sql_result))
 
     #Get counties
     county_sql_result = CoaSummaryView.query.filter().\
@@ -84,13 +81,8 @@ def all_locations_list():
                                       group_by(CoaSummaryView.county).\
                                       order_by(CoaSummaryView.county).\
                                       all()
-    county_list = list(filter(lambda item: item[0], county_sql_result))
-    county_list = [x[0] for x in county_list]
-    county_dict = {}
-    county_dict['locationCategory'] = 'county'
-    county_dict['locationLabel'] = 'County'
-    county_dict['locationNames'] = county_list
-    result_list.append(county_dict)
+
+    result_list.append(create_location_dict('county','County',county_sql_result))
 
     return jsonify(locations=result_list)
 
