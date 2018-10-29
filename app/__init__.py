@@ -8,6 +8,7 @@ db = SQLAlchemy()
 def create_app(config_name):
     """Create an application instance"""
     application = Flask(__name__)
+    application.config['JSON_SORT_KEYS'] = False
     CORS(application)
 
     cfg = os.path.join(os.getcwd(), 'config', config_name + '.py')
