@@ -17,4 +17,4 @@ The back-end RESTApis for the COA website
 
 To test that the flask app is running and properly connected to the database, use the curl command or access the local server through a browser.
 
-Ex: `curl http://127.0.0.1:5000/getsitesdropdownlist` or open http://127.0.0.1:5000/getsitesdropdownlist
+Ex: `curl http://127.0.0.1:5000/locations` or open http://127.0.0.1:5000/locations
