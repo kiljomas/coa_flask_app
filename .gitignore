@@ -104,3 +104,6 @@ ENV/
 .elasticbeanstalk/*
 !.elasticbeanstalk/*.cfg.yml
 !.elasticbeanstalk/*.global.yml
+ 
+# setup script
+*.sh

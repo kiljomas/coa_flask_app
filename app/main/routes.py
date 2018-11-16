@@ -88,38 +88,54 @@ def all_locations_list():
     return jsonify(locations=result_list)
 
 
+def parse_date_string(date_str):
+    return datetime.datetime.strptime(date_str, '%Y-%m-%d').date()
+
 @main.route('/dirtydozen')
 def dirty_dozens():
-    #set the values allowed for the location category
-    location_category = request.args.get('locationCategory', 
-                                          default = 'site', type = str)
-    #site_id = request.args.get('siteId',default = 0, type = int)
-    location_name = request.args.get('locationName',
-                                 default = 'Union Beach', type = str)
+    # set the values allowed for the location category
+    location_category = request.args.get('locationCategory', default = 'site', type = str)
+    location_name = request.args.get('locationName', default = 'Union Beach', type = str)
+    start_date_str = request.args.get('startDate', default = '2016-1-1', type = str)
+    end_date_str = request.args.get('endDate', default = '2018-12-31', type = str)
+    
+    # convert date strings to dates
+    start_date = parse_date_string(start_date_str)
+    end_date = parse_date_string(end_date_str)
 
-    start_date_str = request.args.get('startDate',
-                                    default = '2016-1-1', type = str)
+    result = CoaSummaryView.query \
+        .filter(
+            CoaSummaryView.site_name == location_name,
+            CoaSummaryView.volunteer_date >= start_date,
+            CoaSummaryView.volunteer_date <= end_date) \
+        .with_entities(
+            CoaSummaryView.item_name,
+            CoaSummaryView.item_id,
+            CoaSummaryView.category,
+            CoaSummaryView.material,
+            db.func.sum(CoaSummaryView.quantity).label("quantity_sum")) \
+        .group_by(CoaSummaryView.item_name) \
+        .order_by("quantity_sum desc") \
+        .limit(12)
 
-    end_date_str = request.args.get('endDate',
-                                default = '2018-12-31', type = str)
-    start_date = datetime.datetime.strptime(start_date_str, '%Y-%m-%d').date()
-    end_date = datetime.datetime.strptime(end_date_str, '%Y-%m-%d').date()
-    result = CoaSummaryView.query.filter(CoaSummaryView.site_name == location_name, \
-                                           CoaSummaryView.volunteer_date > start_date,
-                                           CoaSummaryView.volunteer_date < end_date). \
-                                           with_entities(CoaSummaryView.item_name, \
-                                           db.func.sum(CoaSummaryView.quantity)). \
-                                           group_by(CoaSummaryView.item_name)
+    total_items = CoaSummaryView.query \
+        .filter(
+            CoaSummaryView.site_name == location_name,
+            CoaSummaryView.volunteer_date >= start_date,
+            CoaSummaryView.volunteer_date <= end_date) \
+        .with_entities(db.func.sum(CoaSummaryView.quantity)) \
+        .scalar()
 
-    #remove the NULL item_name
-    total = sum(i[1] for i in result)
-    result = filter(lambda item: item[0], result)
-    result = sorted(result, key=lambda tup:tup[1], reverse = True)
-    result = result[:12]
-    result_percentage = list()
-    for x,y in result:
-        percentage = round(float((y/total) * 100), 2)
-        result_percentage.append((x,percentage))
-    result_dict = OrderedDict((tup[0],tup[1]) for tup in result_percentage)
-    return jsonify(items=result_dict)
+    json_list = []
+    for row in result:
+        json_list.append(dict(
+            itemName=row[0], 
+            itemId=row[1],
+            categoryName=row[2],
+            materialName=row[3],
+            count=row[4], 
+            percentage=(0 if total_items == None else (row[4] / total_items) * 100)
+        ))
+
+    return jsonify(dirtydozen=json_list)
 
