@@ -123,3 +123,27 @@ def dirty_dozens():
     result_dict = OrderedDict((tup[0],tup[1]) for tup in result_percentage)
     return jsonify(items=result_dict)
 
+
+@main.route('/validdaterange')
+def valid_date_range():
+    #set the arguments for the validdaterange request
+    location_category = request.args.get('locationCategory', 
+                                          default = 'site', type = str)
+    location_name = request.args.get('locationName',
+                                 default = 'Union Beach', type = str)
+    
+    location_category_column = CoaSummaryView.town if location_category == "town" \
+                                else CoaSummaryView.county if location_category == "county" \
+                                else CoaSummaryView.site_name
+
+    db_result = CoaSummaryView.query.filter(location_category_column == location_name). \
+                                           with_entities(db.func.min(CoaSummaryView.volunteer_date), \
+                                                        db.func.max(CoaSummaryView.volunteer_date)). \
+                                           all()
+    
+    # db_result should have only one value
+    result_dict = dict()
+    for first_date, last_date in db_result:
+        result_dict["firstDate"] = first_date.strftime('%Y-%m-%d')
+        result_dict["lastDate"] = last_date.strftime('%Y-%m-%d')
+    return jsonify(validDateRange=result_dict)
