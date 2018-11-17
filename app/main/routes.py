@@ -139,3 +139,63 @@ def dirty_dozens():
 
     return jsonify(dirtydozen=json_list)
 
+@main.route('/breakdown')
+def breakdown():
+    # set the values allowed for the location category
+    location_category = request.args.get('locationCategory', default = 'site', type = str)
+    location_name = request.args.get('locationName', default = 'Union Beach', type = str)
+    start_date_str = request.args.get('startDate', default = '2016-1-1', type = str)
+    end_date_str = request.args.get('endDate', default = '2018-12-31', type = str)
+    
+    # convert date strings to dates
+    start_date = parse_date_string(start_date_str)
+    end_date = parse_date_string(end_date_str)
+
+    result = CoaSummaryView.query \
+        .filter(
+            CoaSummaryView.site_name == location_name,
+            CoaSummaryView.volunteer_date >= start_date,
+            CoaSummaryView.volunteer_date <= end_date) \
+        .with_entities(
+            CoaSummaryView.item_name, 
+            CoaSummaryView.item_id,
+            CoaSummaryView.category,
+            CoaSummaryView.material,
+            db.func.sum(CoaSummaryView.quantity).label("quantity_sum")) \
+        .group_by(CoaSummaryView.item_name)
+
+    # Aggregate items into material and category hierarchy for sunburst chart
+    sunburst_data = {"name": "Debris", "children": []}
+    for item in result:
+        itemName = item[0]
+        itemId = item[1]
+        categoryName = item[2]
+        materialName = item[3]
+        count = item[4]
+
+        # Check if this material has already been added
+        materialIdx = get_child(materialName, sunburst_data["children"])
+        if materialIdx < 0:
+            sunburst_data["children"].append({"name": materialName, "children": []})
+            materialIdx = len(sunburst_data["children"]) - 1
+        
+        # Check if this category has already been added
+        material = sunburst_data["children"][materialIdx]
+        categoryIdx = get_child(categoryName, material["children"])
+        if categoryIdx < 0:
+            sunburst_data["children"][materialIdx]["children"].append({"name": categoryName, "children": []})
+            categoryIdx = len(material["children"]) - 1
+
+        material["children"][categoryIdx]["children"].append({"name": itemName, "count": count })
+
+    return jsonify(data=sunburst_data)
+
+def get_child(name, children):
+    i = 0
+    for c in children:
+        if c["name"] == name:
+            return i
+        else: 
+            i = i + 1
+
+    return -1
